@@ -10,11 +10,11 @@ const Tab = createBottomTabNavigator();
 
 const AppStack = () => (
   <Tab.Navigator screenOptions={{ headerShown: false }}>
-    {/* <Tab.Screen name="Home" component={HomeScreen} />
+    <Tab.Screen name="Home" component={HomeScreen} />
     <Tab.Screen name="Menu" component={MenuScreen} />
     <Tab.Screen name="Order" component={OrderScreen} />
     <Tab.Screen name="Tracking" component={OrderTrackingScreen} />
-    <Tab.Screen name="Contact" component={ContactScreen} /> */}
+    <Tab.Screen name="Contact" component={ContactScreen} />
   </Tab.Navigator>
 );
 

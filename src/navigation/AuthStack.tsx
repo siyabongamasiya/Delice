@@ -6,9 +6,10 @@ import React from "react";
 const Stack = createNativeStackNavigator();
 
 const AuthStack = () => (
-  <Stack.Navigator screenOptions={{ headerShown: false }}>
-    {/* <Stack.Screen name="Login" component={LoginScreen} />
-    <Stack.Screen name="Signup" component={SignupScreen} /> */}
+  <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="AuthLoading">
+    <Stack.Screen name="AuthLoading" component={AuthLoadingScreen} />
+    <Stack.Screen name="Login" component={LoginScreen} />
+    <Stack.Screen name="Signup" component={SignupScreen} />
   </Stack.Navigator>
 );
 
