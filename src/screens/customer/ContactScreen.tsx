@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Linking,
   StyleSheet,
@@ -8,21 +8,28 @@ import {
   View,
 } from "react-native";
 import { Colors } from "../../constants/colors";
-
-const details = {
-  name: "Delice",
-  address: "123 Luxury Ave, Sandton, Johannesburg",
-  phone: "+27 11 555 1234",
-  email: "reservations@delice.co.za",
-  weekdayHours: "Mon-Fri: 10:00 - 22:00",
-  weekendHours: "Sat-Sun: 09:00 - 23:00",
-  mapsQuery: "https://www.google.com/maps/search/?api=1&query=Delice+Sandton",
-};
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { fetchSettings } from "../../store/slices/settingsSlice";
 
 const ContactScreen = () => {
-  const call = () => Linking.openURL(`tel:${details.phone}`);
-  const email = () => Linking.openURL(`mailto:${details.email}`);
-  const openMaps = () => Linking.openURL(details.mapsQuery);
+  const dispatch = useAppDispatch();
+  const settings = useAppSelector((s) => s.settings);
+
+  useEffect(() => {
+    dispatch(fetchSettings());
+  }, [dispatch]);
+
+  const name = settings.restaurantName || "Delice";
+  const address = settings.address || "";
+  const phone = settings.phone || "";
+  const emailAddr = settings.email || "";
+  const weekday = settings.weekdayHours || "";
+  const weekend = settings.weekendHours || "";
+  const mapsQuery = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + " " + address)}`;
+
+  const call = () => phone && Linking.openURL(`tel:${phone}`);
+  const email = () => emailAddr && Linking.openURL(`mailto:${emailAddr}`);
+  const openMaps = () => Linking.openURL(mapsQuery);
 
   return (
     <View style={styles.container}>
@@ -30,14 +37,14 @@ const ContactScreen = () => {
 
       <View style={styles.card}>
         <Text style={styles.label}>Restaurant</Text>
-        <Text style={styles.value}>{details.name}</Text>
+        <Text style={styles.value}>{name}</Text>
 
         <Text style={[styles.label, { marginTop: 12 }]}>Address</Text>
-        <Text style={styles.value}>{details.address}</Text>
+        <Text style={styles.value}>{address || "—"}</Text>
 
         <Text style={[styles.label, { marginTop: 12 }]}>Hours</Text>
-        <Text style={styles.value}>{details.weekdayHours}</Text>
-        <Text style={styles.value}>{details.weekendHours}</Text>
+        {!!weekday && <Text style={styles.value}>{weekday}</Text>}
+        {!!weekend && <Text style={styles.value}>{weekend}</Text>}
 
         <View style={styles.actionsRow}>
           <TouchableOpacity style={styles.actionBtn} onPress={call}>

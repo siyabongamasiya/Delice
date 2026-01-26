@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
-import React from "react";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import React, { useCallback, useEffect } from "react";
 import {
   ImageBackground,
   ScrollView,
@@ -11,9 +11,29 @@ import {
 } from "react-native";
 import GoldButton from "../../components/GoldButton";
 import { Colors } from "../../constants/colors";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { fetchSettings } from "../../store/slices/settingsSlice";
 
 const HomeScreen = () => {
   const navigation = useNavigation<any>();
+  const dispatch = useAppDispatch();
+  const settings = useAppSelector((s) => s.settings);
+
+  useEffect(() => {
+    dispatch(fetchSettings());
+  }, [dispatch]);
+
+  useFocusEffect(
+    useCallback(() => {
+      dispatch(fetchSettings());
+      return () => {};
+    }, [dispatch]),
+  );
+
+  const brandName = settings.restaurantName || "Delice";
+  const weekday = settings.weekdayHours || "";
+  const weekend = settings.weekendHours || "";
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <ImageBackground
@@ -24,7 +44,7 @@ const HomeScreen = () => {
         imageStyle={{ opacity: 0.35 }}
       >
         <View style={styles.heroContent}>
-          <Text style={styles.brand}>Delice</Text>
+          <Text style={styles.brand}>{brandName}</Text>
           <Text style={styles.tagline}>Fine dining. Luxury experience.</Text>
           <Text style={styles.description}>
             Experience the rich flavors of South African cuisine in an elegant,
@@ -85,8 +105,8 @@ const HomeScreen = () => {
 
       <View style={styles.infoSection}>
         <Text style={styles.infoTitle}>Operating Hours</Text>
-        <Text style={styles.infoText}>Mon-Fri: 10:00 - 22:00</Text>
-        <Text style={styles.infoText}>Sat-Sun: 09:00 - 23:00</Text>
+        {!!weekday && <Text style={styles.infoText}>{weekday}</Text>}
+        {!!weekend && <Text style={styles.infoText}>{weekend}</Text>}
       </View>
     </ScrollView>
   );

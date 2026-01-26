@@ -13,7 +13,7 @@ interface MenuCardProps {
   name: string;
   description: string;
   price: number;
-  imageUrl: string;
+  imageUrl: string | null;
   available: boolean;
   category: string;
 }
@@ -42,7 +42,18 @@ const MenuCard: React.FC<MenuCardProps> = ({
 
   return (
     <View style={[styles.card, !available && styles.unavailable]}>
-      <Image source={{ uri: imageUrl }} style={styles.image} />
+      {imageUrl ? (
+        <Image source={{ uri: imageUrl }} style={styles.image} />
+      ) : (
+        <View
+          style={[
+            styles.image,
+            { alignItems: "center", justifyContent: "center" },
+          ]}
+        >
+          <Text style={{ color: Colors.muted }}>No image</Text>
+        </View>
+      )}
       <Text style={styles.name}>{name}</Text>
       <Text style={styles.description}>{description}</Text>
       <View style={styles.row}>

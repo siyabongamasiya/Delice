@@ -1,4 +1,5 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import supabase from "../../api/supabase";
 
 interface User {
   email: string;
@@ -25,13 +26,17 @@ const initialState: AuthState = {
 // Async thunk for login
 export const login = createAsyncThunk(
   "auth/login",
-  async (payload: { email: string; password: string }) => {
-    // Mocked login: return a fake token and user without network
-    await new Promise((r) => setTimeout(r, 400));
+  async (payload: { email: string; password: string }, { rejectWithValue }) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: payload.email,
+      password: payload.password,
+    });
+    if (error) return rejectWithValue(error.message);
+    const session = data.session;
     return {
-      token: "mock-token",
-      refreshToken: "mock-refresh",
-      user: { email: payload.email },
+      token: session?.access_token || null,
+      refreshToken: session?.refresh_token || null,
+      user: { email: data.user?.email || payload.email },
     };
   },
 );
@@ -64,13 +69,18 @@ export const signupWithGoogle = createAsyncThunk(
 // Async thunk for signup
 export const signup = createAsyncThunk(
   "auth/signup",
-  async (payload: { email: string; password: string }) => {
-    // Mocked signup: return a fake token and user without network
-    await new Promise((r) => setTimeout(r, 500));
+  async (payload: { email: string; password: string }, { rejectWithValue }) => {
+    const { data, error } = await supabase.auth.signUp({
+      email: payload.email,
+      password: payload.password,
+    });
+    if (error) return rejectWithValue(error.message);
+    // If email confirmations are enabled, session may be null. We still return user email.
+    const session = data.session;
     return {
-      token: "mock-token",
-      refreshToken: "mock-refresh",
-      user: { email: payload.email },
+      token: session?.access_token || null,
+      refreshToken: session?.refresh_token || null,
+      user: { email: data.user?.email || payload.email },
     };
   },
 );

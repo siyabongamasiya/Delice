@@ -42,6 +42,7 @@ export const fetchMenu = createAsyncThunk<
     .from("menu_items")
     .select("id,name,description,price,category,available,image_url")
     .order("created_at", { ascending: false });
+    console.log("Here",data)
   if (error) return rejectWithValue(error.message);
   return (data || []).map(mapRowToItem);
 });

@@ -1,5 +1,5 @@
-import { useNavigation } from "@react-navigation/native";
-import React from "react";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import React, { useCallback, useEffect } from "react";
 import {
   FlatList,
   RefreshControl,
@@ -12,14 +12,31 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MenuCard from "../../components/MenuCard";
 import Spinner from "../../components/ui/Spinner";
 import { Colors } from "../../constants/colors";
-import { useAppSelector } from "../../store/hooks";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { fetchMenu } from "../../store/slices/menuSlice";
 
 const MenuScreen = () => {
   const navigation = useNavigation<any>();
+  const dispatch = useAppDispatch();
   const insets = useSafeAreaInsets();
   const { items, loading, error } = useAppSelector((state) => state.menu);
   const cart = useAppSelector((s) => s.cart);
-  const onRefresh = () => {};
+
+  useEffect(() => {
+    dispatch(fetchMenu());
+  }, [dispatch]);
+
+  const onRefresh = useCallback(() => {
+    dispatch(fetchMenu());
+  }, [dispatch]);
+
+  useFocusEffect(
+    useCallback(() => {
+      // Refetch when returning to this tab to reflect recent admin changes
+      dispatch(fetchMenu());
+      return () => {};
+    }, [dispatch]),
+  );
 
   return (
     <View style={styles.container}>
