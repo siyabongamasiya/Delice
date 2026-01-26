@@ -1,4 +1,8 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import * as Linking from "expo-linking";
+import * as WebBrowser from "expo-web-browser";
+import { Platform } from "react-native";
+import { REHYDRATE } from "redux-persist";
 import supabase from "../../api/supabase";
 
 interface User {
@@ -44,25 +48,110 @@ export const login = createAsyncThunk(
 // Mock Google login/signup
 export const loginWithGoogle = createAsyncThunk(
   "auth/loginWithGoogle",
-  async () => {
-    await new Promise((r) => setTimeout(r, 300));
-    return {
-      token: "mock-token",
-      refreshToken: "mock-refresh",
-      user: { email: "google.user@example.com" },
-    };
+  async (_, { rejectWithValue }) => {
+    try {
+      // Web: redirect the main tab. After redirect back, App.tsx restores the session.
+      if (Platform.OS === "web") {
+        const redirectTo = `${window.location.origin}/auth/callback`;
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo,
+          },
+        });
+        if (error) return rejectWithValue(error.message);
+        // Page navigation will happen; this return is just to satisfy the thunk.
+        return { token: null, refreshToken: null, user: { email: "" } };
+      }
+
+      const redirectTo = Linking.createURL("auth/callback");
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo,
+          skipBrowserRedirect: true,
+        },
+      });
+      if (error) return rejectWithValue(error.message);
+      if (!data?.url) return rejectWithValue("Missing OAuth URL");
+
+      const res = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+      if (res.type !== "success" || !res.url) {
+        return rejectWithValue("Google sign-in cancelled");
+      }
+
+      const parsed = Linking.parse(res.url);
+      const code =
+        (parsed.queryParams?.code as string | undefined) || undefined;
+      if (!code) return rejectWithValue("Missing OAuth code");
+
+      const { data: exchanged, error: exchangeError } =
+        await supabase.auth.exchangeCodeForSession(code);
+      if (exchangeError) return rejectWithValue(exchangeError.message);
+
+      return {
+        token: exchanged.session?.access_token || null,
+        refreshToken: exchanged.session?.refresh_token || null,
+        user: { email: exchanged.user?.email || "" },
+      };
+    } catch (e: any) {
+      return rejectWithValue(e.message || "Google sign-in failed");
+    }
   },
 );
 
 export const signupWithGoogle = createAsyncThunk(
   "auth/signupWithGoogle",
-  async () => {
-    await new Promise((r) => setTimeout(r, 300));
-    return {
-      token: "mock-token",
-      refreshToken: "mock-refresh",
-      user: { email: "google.user@example.com" },
-    };
+  async (_, { rejectWithValue }) => {
+    try {
+      // Web: redirect the main tab. After redirect back, App.tsx restores the session.
+      if (Platform.OS === "web") {
+        const redirectTo = `${window.location.origin}/auth/callback`;
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo,
+          },
+        });
+        if (error) return rejectWithValue(error.message);
+        return { token: null, refreshToken: null, user: { email: "" } };
+      }
+
+      const redirectTo = Linking.createURL("auth/callback");
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo,
+          skipBrowserRedirect: true,
+        },
+      });
+      if (error) return rejectWithValue(error.message);
+      if (!data?.url) return rejectWithValue("Missing OAuth URL");
+
+      const res = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+      if (res.type !== "success" || !res.url) {
+        return rejectWithValue("Google sign-up cancelled");
+      }
+
+      const parsed = Linking.parse(res.url);
+      const code =
+        (parsed.queryParams?.code as string | undefined) || undefined;
+      if (!code) return rejectWithValue("Missing OAuth code");
+
+      const { data: exchanged, error: exchangeError } =
+        await supabase.auth.exchangeCodeForSession(code);
+      if (exchangeError) return rejectWithValue(exchangeError.message);
+
+      return {
+        token: exchanged.session?.access_token || null,
+        refreshToken: exchanged.session?.refresh_token || null,
+        user: { email: exchanged.user?.email || "" },
+      };
+    } catch (e: any) {
+      return rejectWithValue(e.message || "Google sign-up failed");
+    }
   },
 );
 
@@ -118,6 +207,12 @@ export const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      .addCase(REHYDRATE as any, (state) => {
+        // If the app reloads while a request was pending, redux-persist may
+        // rehydrate loading=true. Ensure UI isn't stuck in a loading state.
+        state.loading = false;
+        state.error = null;
+      })
       .addCase(login.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -154,9 +249,11 @@ export const authSlice = createSlice({
         loginWithGoogle.fulfilled,
         (state, action: PayloadAction<any>) => {
           state.loading = false;
-          state.token = action.payload.token;
-          state.refreshToken = action.payload.refreshToken;
-          state.user = action.payload.user;
+          if (action.payload?.token) {
+            state.token = action.payload.token;
+            state.refreshToken = action.payload.refreshToken;
+            state.user = action.payload.user;
+          }
         },
       )
       .addCase(loginWithGoogle.rejected, (state, action: any) => {
@@ -171,9 +268,11 @@ export const authSlice = createSlice({
         signupWithGoogle.fulfilled,
         (state, action: PayloadAction<any>) => {
           state.loading = false;
-          state.token = action.payload.token;
-          state.refreshToken = action.payload.refreshToken;
-          state.user = action.payload.user;
+          if (action.payload?.token) {
+            state.token = action.payload.token;
+            state.refreshToken = action.payload.refreshToken;
+            state.user = action.payload.user;
+          }
         },
       )
       .addCase(signupWithGoogle.rejected, (state, action: any) => {
