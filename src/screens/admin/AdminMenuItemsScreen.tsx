@@ -1,5 +1,7 @@
-import React from "react";
+import { Ionicons } from "@expo/vector-icons";
+import React, { useState } from "react";
 import {
+  Alert,
   FlatList,
   StyleSheet,
   Text,
@@ -8,7 +10,7 @@ import {
 } from "react-native";
 import { Colors } from "../../constants/colors";
 
-const items = [
+const SEED_ITEMS = [
   {
     id: "meal-1",
     name: "Grilled Chicken",
@@ -40,6 +42,18 @@ const items = [
 ];
 
 const AdminMenuItemsScreen = () => {
+  const [items, setItems] = useState(SEED_ITEMS);
+
+  const confirmDelete = (id: string, name: string) => {
+    Alert.alert("Delete Item", `Are you sure you want to delete "${name}"?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => setItems((prev) => prev.filter((i) => i.id !== id)),
+      },
+    ]);
+  };
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Menu Items</Text>
@@ -54,11 +68,21 @@ const AdminMenuItemsScreen = () => {
                 {item.category} • R{item.price.toFixed(2)}
               </Text>
             </View>
-            <TouchableOpacity style={styles.tag} activeOpacity={0.8}>
-              <Text style={styles.tagText}>
-                {item.available ? "Available" : "Hidden"}
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.actions}>
+              <TouchableOpacity style={styles.tag} activeOpacity={0.8}>
+                <Text style={styles.tagText}>
+                  {item.available ? "Available" : "Hidden"}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.deleteBtn}
+                onPress={() => confirmDelete(item.id, item.name)}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="trash-outline" size={16} color="#ef4444" />
+                <Text style={styles.deleteText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
         contentContainerStyle={{ paddingBottom: 16 }}
@@ -91,6 +115,7 @@ const styles = StyleSheet.create({
   },
   name: { color: Colors.text, fontWeight: "bold", fontSize: 16 },
   meta: { color: Colors.text, opacity: 0.85, marginTop: 2 },
+  actions: { flexDirection: "row", alignItems: "center", gap: 8 },
   tag: {
     borderWidth: 1,
     borderColor: Colors.primary,
@@ -99,6 +124,18 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   tagText: { color: Colors.primary, fontWeight: "600" },
+  deleteBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: "#ef4444",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginLeft: 8,
+  },
+  deleteText: { color: "#ef4444", fontWeight: "600" },
   addBtn: {
     position: "absolute",
     right: 16,

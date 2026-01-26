@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { Colors } from "../../constants/colors";
 
-const ORDERS = [
+const SEED_ORDERS = [
   { id: "ord-1012", customer: "Lindiwe M.", total: 320.0, status: "ready" },
   { id: "ord-1011", customer: "Sam K.", total: 145.5, status: "pending" },
   { id: "ord-1010", customer: "John D.", total: 189.99, status: "ready" },
@@ -21,18 +21,60 @@ const FILTERS = [
   { key: "pending", label: "Pending" },
   { key: "confirmed", label: "Confirmed" },
   { key: "ready", label: "Ready" },
+  { key: "completed", label: "Completed" },
   { key: "cancelled", label: "Cancelled" },
 ] as const;
 
 type StatusKey = (typeof FILTERS)[number]["key"];
 
+const STATUS_FLOW: StatusKey[] = [
+  "pending",
+  "confirmed",
+  "ready",
+  "completed",
+  "cancelled",
+];
+
+const STATUS_COLOR: Record<string, string> = {
+  pending: "#f59e0b",
+  confirmed: "#3b82f6",
+  ready: "#22c55e",
+  completed: "#a3a3a3",
+  cancelled: "#ef4444",
+};
+
 const AdminOrdersScreen = () => {
   const [filter, setFilter] = useState<StatusKey>("all");
+  const [orders, setOrders] = useState(
+    SEED_ORDERS as Array<{
+      id: string;
+      customer: string;
+      total: number;
+      status:
+        | StatusKey
+        | "confirmed"
+        | "ready"
+        | "pending"
+        | "cancelled"
+        | "completed";
+    }>,
+  );
+
+  const advanceStatus = (id: string) => {
+    setOrders((prev) =>
+      prev.map((o) => {
+        if (o.id !== id) return o;
+        const currentIndex = STATUS_FLOW.indexOf(o.status as StatusKey);
+        const nextIndex = (currentIndex + 1) % STATUS_FLOW.length;
+        return { ...o, status: STATUS_FLOW[nextIndex] };
+      }),
+    );
+  };
 
   const data = useMemo(() => {
-    if (filter === "all") return ORDERS;
-    return ORDERS.filter((o) => o.status === filter);
-  }, [filter]);
+    if (filter === "all") return orders;
+    return orders.filter((o) => o.status === filter);
+  }, [filter, orders]);
 
   return (
     <View style={styles.container}>
@@ -65,7 +107,22 @@ const AdminOrdersScreen = () => {
             <Text style={styles.id}>#{item.id}</Text>
             <Text style={styles.text}>{item.customer}</Text>
             <Text style={styles.text}>R{item.total.toFixed(2)}</Text>
-            <Text style={styles.status}>{item.status}</Text>
+            <TouchableOpacity
+              onPress={() => advanceStatus(item.id)}
+              style={[
+                styles.statusPill,
+                { borderColor: STATUS_COLOR[item.status] || Colors.border },
+              ]}
+            >
+              <Text
+                style={{
+                  color: STATUS_COLOR[item.status] || Colors.text,
+                  fontWeight: "600",
+                }}
+              >
+                {item.status}
+              </Text>
+            </TouchableOpacity>
           </View>
         )}
         contentContainerStyle={{ paddingBottom: 16 }}
@@ -109,6 +166,12 @@ const styles = StyleSheet.create({
   id: { color: Colors.text, fontWeight: "bold" },
   text: { color: Colors.text },
   status: { color: Colors.primary, fontWeight: "600" },
+  statusPill: {
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
 });
 
 export default AdminOrdersScreen;

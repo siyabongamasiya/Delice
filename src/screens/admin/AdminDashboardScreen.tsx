@@ -1,5 +1,12 @@
+import { useNavigation } from "@react-navigation/native";
 import React from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import {
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { Colors } from "../../constants/colors";
 
 const stats = [
@@ -16,9 +23,36 @@ const recentOrders = [
 ];
 
 const AdminDashboardScreen = () => {
+  const navigation = useNavigation();
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Dashboard</Text>
+      <View style={styles.quickRow}>
+        <TouchableOpacity
+          style={styles.quick}
+          activeOpacity={0.85}
+          onPress={() => navigation.navigate("AdminOrders" as never)}
+        >
+          <Text style={styles.quickTitle}>Manage Orders</Text>
+          <Text style={styles.quickHint}>View, filter and track</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.quick}
+          activeOpacity={0.85}
+          onPress={() => navigation.navigate("AdminMenuItems" as never)}
+        >
+          <Text style={styles.quickTitle}>Menu Items</Text>
+          <Text style={styles.quickHint}>Edit prices & availability</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.quick}
+          activeOpacity={0.85}
+          onPress={() => navigation.navigate("AdminSettings" as never)}
+        >
+          <Text style={styles.quickTitle}>Settings</Text>
+          <Text style={styles.quickHint}>Restaurant info</Text>
+        </TouchableOpacity>
+      </View>
       <View style={styles.cardsRow}>
         {stats.map((s) => (
           <View key={s.key} style={styles.card}>
@@ -57,6 +91,22 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   cardsRow: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  quickRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    marginBottom: 12,
+  },
+  quick: {
+    flexBasis: "31%",
+    backgroundColor: Colors.card,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    padding: 12,
+  },
+  quickTitle: { color: Colors.primary, fontWeight: "bold" },
+  quickHint: { color: "#aaa", marginTop: 4, fontSize: 12 },
   card: {
     flexBasis: "48%",
     backgroundColor: Colors.card,
