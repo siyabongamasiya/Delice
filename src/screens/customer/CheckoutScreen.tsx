@@ -1,6 +1,6 @@
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -15,7 +15,6 @@ import supabase, { SUPABASE_ANON_KEY, SUPABASE_URL } from "../../api/supabase";
 import GoldButton from "../../components/GoldButton";
 import { Colors } from "../../constants/colors";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import { clearCart } from "../../store/slices/cartSlice";
 import { createOrder } from "../../store/slices/ordersSlice";
 
 WebBrowser.maybeCompleteAuthSession();
@@ -128,23 +127,10 @@ const CheckoutScreen = ({ navigation }: any) => {
       }
 
       // Open Paystack hosted checkout
-      const result = await WebBrowser.openAuthSessionAsync(
-        authorizationUrl,
-        callbackUrl,
-      );
+      await WebBrowser.openBrowserAsync(authorizationUrl);
 
-      if (result.type !== "success" || !result.url) {
-        Alert.alert("Payment cancelled", "You cancelled the payment.");
-        return;
-      }
+      let returnedReference = reference;
 
-      const parsed = Linking.parse(result.url);
-      const returnedReference =
-        (parsed.queryParams?.reference as string | undefined) ||
-        (parsed.queryParams?.trxref as string | undefined) ||
-        reference;
-
-      dispatch(clearCart());
       navigation.navigate("PaystackCallback", {
         reference: returnedReference,
         order_id: orderId,

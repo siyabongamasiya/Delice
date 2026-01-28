@@ -15,11 +15,10 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "output": "static"
+      "bundler": "metro"
     },
     "plugins": [],
     "experiments": {
-      "typedRoutes": true,
       "reactCompiler": true
     }
   }

@@ -14,7 +14,6 @@ import { login, loginWithGoogle } from "../../store/slices/authSlice";
 
 const LoginScreen = () => {
   const dispatch = useAppDispatch();
-  console.log("LoginScreen");
   const navigation = useNavigation();
   const loading = useAppSelector((state) => state.auth.loading);
   const error = useAppSelector((state) => state.auth.error);
