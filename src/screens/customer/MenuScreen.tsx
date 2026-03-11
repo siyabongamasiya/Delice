@@ -1,7 +1,8 @@
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
-import React, { useCallback, useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import {
   FlatList,
+  Image,
   RefreshControl,
   StyleSheet,
   Text,
@@ -40,7 +41,14 @@ const MenuScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Menu</Text>
+      <View style={styles.header}>
+        <Image
+          source={require("../../../assets/images/delice-logo.png")}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+        <Text style={styles.title}>Menu</Text>
+      </View>
       {loading && <Spinner />}
       {error && <Text style={styles.error}>{error}</Text>}
       <FlatList
@@ -82,11 +90,19 @@ const styles = StyleSheet.create({
     backgroundColor: "#000",
     padding: 16,
   },
+  header: {
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  logo: {
+    width: 56,
+    height: 56,
+    marginBottom: 10,
+  },
   title: {
     color: "#D4AF37",
     fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 16,
     alignSelf: "center",
   },
   error: {

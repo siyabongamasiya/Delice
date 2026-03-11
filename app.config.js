@@ -20,9 +20,38 @@ module.exports = {
   version: "1.0.0",
   orientation: "portrait",
   userInterfaceStyle: "dark",
+  icon: "./assets/images/delice-logo.png",
+  splash: {
+    image: "./assets/images/delice-logo.png",
+    resizeMode: "contain",
+    backgroundColor: "#000000",
+  },
   ios: { supportsTablet: true },
   android: {
     package: androidPackage,
+    adaptiveIcon: {
+      foregroundImage: "./assets/images/delice-logo.png",
+      backgroundColor: "#000000",
+    },
+    intentFilters: [
+      {
+        action: "VIEW",
+        autoVerify: false,
+        category: ["BROWSABLE", "DEFAULT"],
+        data: [
+          {
+            scheme: "delice",
+            host: "auth",
+            pathPrefix: "/callback",
+          },
+          {
+            scheme: "delice",
+            host: "paystack",
+            pathPrefix: "/callback",
+          },
+        ],
+      },
+    ],
   },
   web: { bundler: "metro" },
   extra: {
