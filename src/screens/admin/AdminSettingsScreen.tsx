@@ -1,11 +1,15 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import GoldButton from "../../components/GoldButton";
 import { Colors } from "../../constants/colors";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
@@ -14,6 +18,7 @@ import { fetchSettings, saveSettings } from "../../store/slices/settingsSlice";
 const AdminSettingsScreen = () => {
   const dispatch = useAppDispatch();
   const settings = useAppSelector((s) => s.settings);
+  const insets = useSafeAreaInsets();
 
   const [restaurantName, setRestaurantName] = useState("");
   const [address, setAddress] = useState("");
@@ -56,68 +61,83 @@ const AdminSettingsScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Restaurant Settings</Text>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
+    >
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{
+          paddingBottom: 24 + insets.bottom,
+        }}
+      >
+        <Text style={styles.title}>Restaurant Settings</Text>
 
-      <View style={styles.card}>
-        <Text style={styles.label}>Name</Text>
-        <TextInput
-          style={styles.input}
-          value={restaurantName}
-          onChangeText={setRestaurantName}
-          placeholderTextColor="#888"
-        />
+        <View style={styles.card}>
+          <Text style={styles.label}>Name</Text>
+          <TextInput
+            style={styles.input}
+            value={restaurantName}
+            onChangeText={setRestaurantName}
+            placeholderTextColor="#888"
+          />
 
-        <Text style={styles.label}>Address</Text>
-        <TextInput
-          style={styles.input}
-          value={address}
-          onChangeText={setAddress}
-          placeholderTextColor="#888"
-        />
+          <Text style={styles.label}>Address</Text>
+          <TextInput
+            style={styles.input}
+            value={address}
+            onChangeText={setAddress}
+            placeholderTextColor="#888"
+          />
 
-        <Text style={styles.label}>Phone</Text>
-        <TextInput
-          style={styles.input}
-          value={phone}
-          onChangeText={setPhone}
-          placeholderTextColor="#888"
-        />
+          <Text style={styles.label}>Phone</Text>
+          <TextInput
+            style={styles.input}
+            value={phone}
+            onChangeText={setPhone}
+            placeholderTextColor="#888"
+          />
 
-        <Text style={styles.label}>Email</Text>
-        <TextInput
-          style={styles.input}
-          value={email}
-          onChangeText={setEmail}
-          placeholderTextColor="#888"
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+            placeholderTextColor="#888"
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
 
-        <Text style={styles.label}>Hours (Weekdays)</Text>
-        <TextInput
-          style={styles.input}
-          value={weekdayHours}
-          onChangeText={setWeekdayHours}
-          placeholderTextColor="#888"
-        />
+          <Text style={styles.label}>Hours (Weekdays)</Text>
+          <TextInput
+            style={styles.input}
+            value={weekdayHours}
+            onChangeText={setWeekdayHours}
+            placeholderTextColor="#888"
+          />
 
-        <Text style={styles.label}>Hours (Weekend)</Text>
-        <TextInput
-          style={styles.input}
-          value={weekendHours}
-          onChangeText={setWeekendHours}
-          placeholderTextColor="#888"
-        />
-        {settings.loading ? (
-          <View style={{ marginTop: 12 }}>
-            <ActivityIndicator color={Colors.primary} />
-          </View>
-        ) : (
-          <GoldButton title="Save" onPress={onSave} style={{ marginTop: 12 }} />
-        )}
-      </View>
-    </View>
+          <Text style={styles.label}>Hours (Weekend)</Text>
+          <TextInput
+            style={styles.input}
+            value={weekendHours}
+            onChangeText={setWeekendHours}
+            placeholderTextColor="#888"
+          />
+          {settings.loading ? (
+            <View style={{ marginTop: 12 }}>
+              <ActivityIndicator color={Colors.primary} />
+            </View>
+          ) : (
+            <GoldButton
+              title="Save"
+              onPress={onSave}
+              style={{ marginTop: 12 }}
+            />
+          )}
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 

@@ -1,7 +1,10 @@
-import React from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback, useEffect } from "react";
 import { FlatList, StyleSheet, Text, View } from "react-native";
+import Spinner from "../../components/ui/Spinner";
 import { Colors } from "../../constants/colors";
-import { useAppSelector } from "../../store/hooks";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { fetchMyOrders } from "../../store/slices/ordersSlice";
 
 const STATUS_TEXT: Record<
   "pending" | "confirmed" | "ready" | "completed" | "cancelled",
@@ -33,10 +36,25 @@ const LEGEND: Array<{ key: keyof typeof STATUS_TEXT; label: string }> = [
 ];
 
 const OrdersScreen = () => {
+  const dispatch = useAppDispatch();
   const orders = useAppSelector((s) => s.orders.orders);
+  const loading = useAppSelector((s) => s.orders.loading);
+
+  useEffect(() => {
+    dispatch(fetchMyOrders());
+  }, [dispatch]);
+
+  useFocusEffect(
+    useCallback(() => {
+      dispatch(fetchMyOrders());
+      return () => {};
+    }, [dispatch]),
+  );
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Your Orders</Text>
+      {loading && <Spinner />}
       <FlatList
         data={orders}
         keyExtractor={(o) => o.id}

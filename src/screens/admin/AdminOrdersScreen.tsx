@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   FlatList,
   StyleSheet,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Spinner from "../../components/ui/Spinner";
 import { Colors } from "../../constants/colors";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { fetchOrders, updateOrderStatus } from "../../store/slices/ordersSlice";
@@ -65,6 +66,8 @@ const AdminOrdersScreen = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Orders</Text>
+
+      {loading && <Spinner />}
 
       <View style={styles.filters}>
         {FILTERS.map((f) => (

@@ -3,6 +3,7 @@ import supabase from "../../api/supabase";
 
 export interface Order {
   id: string;
+  customerName?: string;
   trackingCode?: string;
   items?: any[];
   total?: number;
@@ -41,6 +42,7 @@ type OrderRow = {
 
 const mapRowToOrder = (r: OrderRow): Order => ({
   id: r.id,
+  customerName: r.customer_name ?? undefined,
   total: r.total ?? undefined,
   status: r.status,
   type: r.type,
@@ -58,6 +60,24 @@ export const fetchOrders = createAsyncThunk<
   const { data, error } = await supabase
     .from("orders")
     .select("id, customer_name, total, status, type, created_at")
+    .order("created_at", { ascending: false });
+  if (error) return rejectWithValue(error.message);
+  return (data as OrderRow[]).map(mapRowToOrder);
+});
+
+export const fetchMyOrders = createAsyncThunk<
+  Order[],
+  void,
+  { rejectValue: string; state: any }
+>("orders/fetchMine", async (_, { rejectWithValue, getState }) => {
+  const state = getState();
+  const email: string | undefined = state?.auth?.user?.email;
+  if (!email) return rejectWithValue("Not logged in");
+
+  const { data, error } = await supabase
+    .from("orders")
+    .select("id, customer_name, total, status, type, created_at")
+    .eq("customer_name", email)
     .order("created_at", { ascending: false });
   if (error) return rejectWithValue(error.message);
   return (data as OrderRow[]).map(mapRowToOrder);
@@ -81,20 +101,23 @@ export const updateOrderStatus = createAsyncThunk<
 export const createOrder = createAsyncThunk<
   Order,
   {
-    customer_name: string;
     customer_phone: string | null;
     notes: string | null;
     items: Array<{ id: string; name: string; qty: number; price: number }>;
     total: number;
     type: Order["type"];
   },
-  { rejectValue: string }
->("orders/create", async (payload, { rejectWithValue }) => {
+  { rejectValue: string; state: any }
+>("orders/create", async (payload, { rejectWithValue, getState }) => {
   // Keep DB insert minimal to avoid schema mismatches.
+  const state = getState();
+  const email: string | undefined = state?.auth?.user?.email;
+  if (!email) return rejectWithValue("Not logged in");
+
   const { data, error } = await supabase
     .from("orders")
     .insert({
-      customer_name: payload.customer_name,
+      customer_name: email,
       total: payload.total,
       status: "pending",
       type: payload.type,
@@ -147,6 +170,18 @@ export const ordersSlice = createSlice({
         state.orders = action.payload;
       })
       .addCase(fetchOrders.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to fetch orders";
+      })
+      .addCase(fetchMyOrders.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchMyOrders.fulfilled, (state, action) => {
+        state.loading = false;
+        state.orders = action.payload;
+      })
+      .addCase(fetchMyOrders.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Failed to fetch orders";
       })

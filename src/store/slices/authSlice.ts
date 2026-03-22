@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { makeRedirectUri } from "expo-auth-session";
+import Constants from "expo-constants";
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 import { Platform } from "react-native";
@@ -65,9 +66,10 @@ export const loginWithGoogle = createAsyncThunk(
         return { token: null, refreshToken: null, user: { email: "" } };
       }
 
-      const redirectTo = makeRedirectUri({
-        native: "delice://auth/callback",
-      });
+      const redirectTo =
+        Constants.appOwnership === "expo"
+          ? Linking.createURL("auth/callback")
+          : makeRedirectUri({ native: "delice://auth/callback" });
       console.log("OAUTH REDIRECT (native)", redirectTo);
 
       const { data, error } = await supabase.auth.signInWithOAuth({
@@ -124,9 +126,10 @@ export const signupWithGoogle = createAsyncThunk(
         return { token: null, refreshToken: null, user: { email: "" } };
       }
 
-      const redirectTo = makeRedirectUri({
-        native: "delice://auth/callback",
-      });
+      const redirectTo =
+        Constants.appOwnership === "expo"
+          ? Linking.createURL("auth/callback")
+          : makeRedirectUri({ native: "delice://auth/callback" });
       console.log("OAUTH REDIRECT (native)", redirectTo);
 
       const { data, error } = await supabase.auth.signInWithOAuth({

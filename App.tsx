@@ -6,45 +6,49 @@ import "react-native-url-polyfill/auto";
 // Supabase PKCE needs WebCrypto (crypto.subtle) for SHA-256.
 // Expo Go may not provide it, so we provide a minimal compatible shim.
 const g: any = globalThis as any;
-g.crypto = g.crypto || {};
+const isWeb = typeof window !== "undefined" && typeof document !== "undefined";
 
-// Do NOT override getRandomValues here; react-native-get-random-values patches it.
-// Only polyfill crypto.subtle.digest for PKCE (SHA-256).
-g.crypto.subtle = g.crypto.subtle || {};
+if (!isWeb) {
+  g.crypto = g.crypto || {};
 
-if (!g.crypto.subtle.digest) {
-  g.crypto.subtle.digest = async (
-    algorithm: any,
-    data: ArrayBuffer | ArrayBufferView,
-  ): Promise<ArrayBuffer> => {
-    const name =
-      typeof algorithm === "string" ? algorithm : (algorithm?.name as string);
-    if (name !== "SHA-256") {
-      throw new Error(`Unsupported digest algorithm: ${name}`);
-    }
+  // Do NOT override getRandomValues here; react-native-get-random-values patches it.
+  // Only polyfill crypto.subtle.digest for PKCE (SHA-256).
+  g.crypto.subtle = g.crypto.subtle || {};
 
-    const bytes =
-      data instanceof ArrayBuffer
-        ? new Uint8Array(data)
-        : new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+  if (!g.crypto.subtle.digest) {
+    g.crypto.subtle.digest = async (
+      algorithm: any,
+      data: ArrayBuffer | ArrayBufferView,
+    ): Promise<ArrayBuffer> => {
+      const name =
+        typeof algorithm === "string" ? algorithm : (algorithm?.name as string);
+      if (name !== "SHA-256") {
+        throw new Error(`Unsupported digest algorithm: ${name}`);
+      }
 
-    // expo-crypto typing differs across versions (some return ArrayBuffer, others Uint8Array).
-    const hash: any = await (ExpoCrypto as any).digest(
-      (ExpoCrypto as any).CryptoDigestAlgorithm.SHA256,
-      bytes as any,
-    );
+      const bytes =
+        data instanceof ArrayBuffer
+          ? new Uint8Array(data)
+          : new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
 
-    if (hash instanceof ArrayBuffer) {
-      return hash;
-    }
+      // expo-crypto typing differs across versions (some return ArrayBuffer, others Uint8Array).
+      const hash: any = await (ExpoCrypto as any).digest(
+        (ExpoCrypto as any).CryptoDigestAlgorithm.SHA256,
+        bytes as any,
+      );
 
-    // Assume Uint8Array-like
-    const hashBytes = hash as Uint8Array;
-    return hashBytes.buffer.slice(
-      hashBytes.byteOffset,
-      hashBytes.byteOffset + hashBytes.byteLength,
-    ) as ArrayBuffer;
-  };
+      if (hash instanceof ArrayBuffer) {
+        return hash;
+      }
+
+      // Assume Uint8Array-like
+      const hashBytes = hash as Uint8Array;
+      return hashBytes.buffer.slice(
+        hashBytes.byteOffset,
+        hashBytes.byteOffset + hashBytes.byteLength,
+      ) as ArrayBuffer;
+    };
+  }
 }
 
 WebBrowser.maybeCompleteAuthSession();

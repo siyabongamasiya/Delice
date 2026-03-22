@@ -1,6 +1,6 @@
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
-import React, { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Image,
@@ -12,19 +12,48 @@ import {
   View,
 } from "react-native";
 import GoldButton from "../../components/GoldButton";
+import Spinner from "../../components/ui/Spinner";
 import { Colors } from "../../constants/colors";
-import { useAppDispatch } from "../../store/hooks";
-import { addMenuItem } from "../../store/slices/menuSlice";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { addMenuItem, updateMenuItem } from "../../store/slices/menuSlice";
 
 const AdminEditMenuItemScreen = () => {
   const dispatch = useAppDispatch();
-  const navigation = useNavigation();
+  const saving = useAppSelector((s) => s.menu.loading);
+  const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const existingItem = route?.params?.item as
+    | {
+        id: string;
+        name: string;
+        description: string;
+        price: number;
+        category: string;
+        available: boolean;
+        imageUrl: string | null;
+      }
+    | undefined;
+
+  const isEdit = useMemo(() => !!existingItem?.id, [existingItem?.id]);
+
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("meals");
   const [description, setDescription] = useState("");
   const [available, setAvailable] = useState(true);
   const [imageUri, setImageUri] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!existingItem) return;
+    setName(existingItem.name || "");
+    setPrice(
+      typeof existingItem.price === "number" ? String(existingItem.price) : "",
+    );
+    setCategory(existingItem.category || "meals");
+    setDescription(existingItem.description || "");
+    setAvailable(!!existingItem.available);
+    setImageUri(existingItem.imageUrl || null);
+  }, [existingItem]);
 
   const pickFromLibrary = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -55,16 +84,30 @@ const AdminEditMenuItemScreen = () => {
       Alert.alert("Invalid input", "Please enter name and a valid price.");
       return;
     }
-    const action = await dispatch(
-      addMenuItem({
-        name,
-        price: p,
-        category,
-        description,
-        available,
-        localImageUri: imageUri,
-      }),
-    );
+    const action = isEdit
+      ? await dispatch(
+          updateMenuItem({
+            id: existingItem!.id,
+            changes: {
+              name,
+              price: p,
+              category,
+              description,
+              available,
+            },
+            newImageUri: imageUri,
+          }),
+        )
+      : await dispatch(
+          addMenuItem({
+            name,
+            price: p,
+            category,
+            description,
+            available,
+            localImageUri: imageUri,
+          }),
+        );
     if ((action as any).error) {
       Alert.alert("Error", (action as any).payload || "Failed to save");
       return;
@@ -78,7 +121,11 @@ const AdminEditMenuItemScreen = () => {
       style={styles.container}
       contentContainerStyle={{ paddingBottom: 24 }}
     >
-      <Text style={styles.title}>Add Menu Item</Text>
+      <Text style={styles.title}>
+        {isEdit ? "Edit Menu Item" : "Add Menu Item"}
+      </Text>
+
+      {saving && <Spinner />}
 
       <Text style={styles.label}>Name</Text>
       <TextInput
@@ -159,11 +206,20 @@ const AdminEditMenuItemScreen = () => {
       )}
 
       <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
-        <GoldButton title="Pick from Gallery" onPress={pickFromLibrary} />
-        <GoldButton title="Take Photo" onPress={takePhoto} />
+        <GoldButton
+          title="Pick from Gallery"
+          onPress={pickFromLibrary}
+          disabled={saving}
+        />
+        <GoldButton title="Take Photo" onPress={takePhoto} disabled={saving} />
       </View>
 
-      <GoldButton title="Save" onPress={onSave} style={{ marginTop: 16 }} />
+      <GoldButton
+        title={isEdit ? "Update" : "Save"}
+        onPress={onSave}
+        disabled={saving}
+        style={{ marginTop: 16 }}
+      />
     </ScrollView>
   );
 };

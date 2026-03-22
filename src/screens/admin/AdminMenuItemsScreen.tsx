@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import {
   Alert,
   FlatList,
@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Spinner from "../../components/ui/Spinner";
 import { Colors } from "../../constants/colors";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
@@ -19,8 +20,8 @@ import {
 
 const AdminMenuItemsScreen = () => {
   const dispatch = useAppDispatch();
-  const { items } = useAppSelector((s) => s.menu);
-  const navigation = useNavigation();
+  const { items, loading } = useAppSelector((s) => s.menu);
+  const navigation = useNavigation<any>();
 
   useEffect(() => {
     dispatch(fetchMenu());
@@ -39,11 +40,16 @@ const AdminMenuItemsScreen = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Menu Items</Text>
+      {loading && <Spinner />}
       <FlatList
         data={items}
         keyExtractor={(i) => i.id}
         renderItem={({ item }) => (
-          <View style={[styles.row, !item.available && { opacity: 0.6 }]}>
+          <TouchableOpacity
+            style={[styles.row, !item.available && { opacity: 0.6 }]}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate("AdminEditMenuItem", { item })}
+          >
             <View style={{ flex: 1 }}>
               <Text style={styles.name}>{item.name}</Text>
               <Text style={styles.meta}>
@@ -76,14 +82,14 @@ const AdminMenuItemsScreen = () => {
                 <Text style={styles.deleteText}>Delete</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </TouchableOpacity>
         )}
         contentContainerStyle={{ paddingBottom: 16 }}
       />
       <TouchableOpacity
         style={styles.addBtn}
         activeOpacity={0.85}
-        onPress={() => navigation.navigate("AdminEditMenuItem" as never)}
+        onPress={() => navigation.navigate("AdminEditMenuItem")}
       >
         <Text style={styles.addText}>+ Add Item</Text>
       </TouchableOpacity>

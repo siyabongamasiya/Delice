@@ -1,5 +1,52 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import * as FileSystem from "expo-file-system/legacy";
 import supabase from "../../api/supabase";
+
+const base64ToUint8Array = (base64: string): Uint8Array => {
+  const g: any = globalThis as any;
+  const atobFn = g.atob as ((b64: string) => string) | undefined;
+  if (!atobFn) {
+    throw new Error("Missing base64 decoder (atob) in this environment");
+  }
+  const binary = atobFn(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+};
+
+const guessImageMime = (uri: string): { mime: string; ext: string } => {
+  const clean = uri.split("?")[0];
+  const m = clean.match(/\.([a-zA-Z0-9]+)$/);
+  const ext = (m?.[1] || "jpg").toLowerCase();
+  switch (ext) {
+    case "png":
+      return { mime: "image/png", ext: "png" };
+    case "webp":
+      return { mime: "image/webp", ext: "webp" };
+    case "heic":
+      return { mime: "image/heic", ext: "heic" };
+    case "jpeg":
+    case "jpg":
+    default:
+      return { mime: "image/jpeg", ext: "jpg" };
+  }
+};
+
+const readImageBytes = async (
+  uri: string,
+): Promise<{
+  bytes: Uint8Array;
+  mime: string;
+  ext: string;
+}> => {
+  const { mime, ext } = guessImageMime(uri);
+  const b64 = await FileSystem.readAsStringAsync(uri, {
+    encoding: "base64" as any,
+  });
+  return { bytes: base64ToUint8Array(b64), mime, ext };
+};
 
 export interface MenuItem {
   id: string;
@@ -42,7 +89,7 @@ export const fetchMenu = createAsyncThunk<
     .from("menu_items")
     .select("id,name,description,price,category,available,image_url")
     .order("created_at", { ascending: false });
-    console.log("Here",data)
+  console.log("Here", data);
   if (error) return rejectWithValue(error.message);
   return (data || []).map(mapRowToItem);
 });
@@ -64,19 +111,11 @@ export const addMenuItem = createAsyncThunk<
   try {
     let image_url: string | null = null;
     if (payload.localImageUri) {
-      const res = await fetch(payload.localImageUri);
-      const blob = await res.blob();
-      const mime = blob.type || "image/jpeg";
-      const guessedExt = mime.includes("/") ? mime.split("/")[1] : "jpeg";
-      const safeExt =
-        guessedExt
-          .split(";")[0]
-          .replace(/[^a-zA-Z0-9]/g, "")
-          .toLowerCase() || "jpeg";
-      const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${safeExt}`;
+      const { bytes, mime, ext } = await readImageBytes(payload.localImageUri);
+      const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
       const { error: uploadError } = await supabase.storage
         .from("menu-images")
-        .upload(path, blob, {
+        .upload(path, bytes, {
           contentType: mime,
           upsert: false,
         });
@@ -125,20 +164,14 @@ export const updateMenuItem = createAsyncThunk<
   async ({ id, changes, newImageUri }, { rejectWithValue }) => {
     try {
       let image_url_field: string | undefined;
-      if (newImageUri) {
-        const res = await fetch(newImageUri);
-        const blob = await res.blob();
-        const mime = blob.type || "image/jpeg";
-        const guessedExt = mime.includes("/") ? mime.split("/")[1] : "jpeg";
-        const safeExt =
-          guessedExt
-            .split(";")[0]
-            .replace(/[^a-zA-Z0-9]/g, "")
-            .toLowerCase() || "jpeg";
-        const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${safeExt}`;
+      const shouldUploadImage =
+        !!newImageUri && !/^https?:\/\//i.test(String(newImageUri));
+      if (shouldUploadImage) {
+        const { bytes, mime, ext } = await readImageBytes(newImageUri);
+        const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
         const { error: uploadError } = await supabase.storage
           .from("menu-images")
-          .upload(path, blob, {
+          .upload(path, bytes, {
             contentType: mime,
             upsert: true,
           });
@@ -256,44 +289,65 @@ export const menuSlice = createSlice({
         state.error = action.payload as string;
       })
       .addCase(addMenuItem.pending, (state) => {
+        state.loading = true;
         state.error = null;
       })
       .addCase(
         addMenuItem.fulfilled,
         (state, action: PayloadAction<MenuItem>) => {
+          state.loading = false;
           state.items.unshift(action.payload);
         },
       )
       .addCase(addMenuItem.rejected, (state, action: any) => {
+        state.loading = false;
         state.error = action.payload as string;
+      })
+      .addCase(updateMenuItem.pending, (state) => {
+        state.loading = true;
+        state.error = null;
       })
       .addCase(
         updateMenuItem.fulfilled,
         (state, action: PayloadAction<MenuItem>) => {
+          state.loading = false;
           const idx = state.items.findIndex((i) => i.id === action.payload.id);
           if (idx !== -1) state.items[idx] = action.payload;
         },
       )
       .addCase(updateMenuItem.rejected, (state, action: any) => {
+        state.loading = false;
         state.error = action.payload as string;
+      })
+      .addCase(deleteMenuItem.pending, (state) => {
+        state.loading = true;
+        state.error = null;
       })
       .addCase(
         deleteMenuItem.fulfilled,
         (state, action: PayloadAction<string>) => {
+          state.loading = false;
           state.items = state.items.filter((i) => i.id !== action.payload);
         },
       )
       .addCase(deleteMenuItem.rejected, (state, action: any) => {
+        state.loading = false;
         state.error = action.payload as string;
+      })
+      .addCase(toggleAvailability.pending, (state) => {
+        state.loading = true;
+        state.error = null;
       })
       .addCase(
         toggleAvailability.fulfilled,
         (state, action: PayloadAction<{ id: string; available: boolean }>) => {
+          state.loading = false;
           const item = state.items.find((i) => i.id === action.payload.id);
           if (item) item.available = action.payload.available;
         },
       )
       .addCase(toggleAvailability.rejected, (state, action: any) => {
+        state.loading = false;
         state.error = action.payload as string;
       });
   },

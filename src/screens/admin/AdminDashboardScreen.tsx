@@ -1,5 +1,5 @@
 import { useNavigation } from "@react-navigation/native";
-import React from "react";
+import { useEffect, useMemo } from "react";
 import {
   FlatList,
   StyleSheet,
@@ -7,26 +7,52 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Spinner from "../../components/ui/Spinner";
 import { Colors } from "../../constants/colors";
-
-const stats = [
-  { key: "Orders Today", value: 24 },
-  { key: "Revenue Today", value: "R 3,560" },
-  { key: "Pending", value: 5 },
-  { key: "Ready", value: 7 },
-];
-
-const recentOrders = [
-  { id: "ord-1010", customer: "John D.", total: 189.99, status: "ready" },
-  { id: "ord-1009", customer: "Nomsa K.", total: 98.5, status: "confirmed" },
-  { id: "ord-1008", customer: "Peter S.", total: 256.0, status: "pending" },
-];
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { fetchOrders } from "../../store/slices/ordersSlice";
 
 const AdminDashboardScreen = () => {
   const navigation = useNavigation();
+  const dispatch = useAppDispatch();
+  const { orders, loading } = useAppSelector((s) => s.orders);
+
+  useEffect(() => {
+    dispatch(fetchOrders());
+  }, [dispatch]);
+
+  const { stats, recentOrders } = useMemo(() => {
+    const now = new Date();
+    const todayKey = now.toISOString().slice(0, 10);
+
+    const todays = orders.filter((o) => o.date === todayKey);
+    const ordersToday = todays.length;
+    const revenueToday = todays.reduce((sum, o) => sum + (o.total || 0), 0);
+    const pendingCount = orders.filter((o) => o.status === "pending").length;
+    const readyCount = orders.filter((o) => o.status === "ready").length;
+
+    const recent = orders.slice(0, 6).map((o) => ({
+      id: o.id,
+      customer: o.customerName || "—",
+      total: typeof o.total === "number" ? o.total : 0,
+      status: o.status,
+    }));
+
+    return {
+      stats: [
+        { key: "Orders Today", value: ordersToday },
+        { key: "Revenue Today", value: `R ${revenueToday.toFixed(2)}` },
+        { key: "Pending", value: pendingCount },
+        { key: "Ready", value: readyCount },
+      ],
+      recentOrders: recent,
+    };
+  }, [orders]);
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Dashboard</Text>
+      {loading && <Spinner />}
       <View style={styles.quickRow}>
         <TouchableOpacity
           style={styles.quick}
@@ -76,6 +102,13 @@ const AdminDashboardScreen = () => {
             <Text style={styles.orderStatus}>{item.status}</Text>
           </View>
         )}
+        ListEmptyComponent={() =>
+          !loading ? (
+            <Text style={{ color: Colors.text, opacity: 0.8, marginTop: 12 }}>
+              No orders yet.
+            </Text>
+          ) : null
+        }
       />
     </View>
   );

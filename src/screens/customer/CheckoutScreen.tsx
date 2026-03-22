@@ -1,7 +1,9 @@
+import Constants from "expo-constants";
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 import { useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -25,7 +27,8 @@ const CheckoutScreen = ({ navigation }: any) => {
   const userEmail = useAppSelector((s) => s.auth.user?.email) || "";
   const loading = useAppSelector((s) => s.orders.loading);
 
-  const [name, setName] = useState("");
+  const [paying, setPaying] = useState(false);
+
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
 
@@ -35,11 +38,14 @@ const CheckoutScreen = ({ navigation }: any) => {
   );
 
   const onPayWithCard = async () => {
+    if (paying) return;
+    setPaying(true);
     if (!canPlace) {
       Alert.alert(
         "Cart is empty",
         "Please add items to your cart before checkout.",
       );
+      setPaying(false);
       return;
     }
 
@@ -49,11 +55,11 @@ const CheckoutScreen = ({ navigation }: any) => {
     console.log("ACCESS TOKEN EXISTS?", !!accessToken);
     if (!accessToken) {
       Alert.alert("Login required", "Please login before making a payment.");
+      setPaying(false);
       return;
     }
 
     const payload = {
-      customer_name: name || userEmail || "Guest",
       customer_phone: phone || null,
       notes: notes || null,
       items: items.map((it) => ({
@@ -74,12 +80,21 @@ const CheckoutScreen = ({ navigation }: any) => {
       const amount = Math.max(1, Math.round(total * 100));
       const email = userEmail || "customer@example.com";
 
-      const callbackUrl = Linking.createURL("paystack/callback", {
-        queryParams: { order_id: orderId },
-      });
+      // In a standalone build we want Paystack to redirect to our custom scheme.
+      // In Expo Go, deep links use an Expo-managed URL, so keep the default.
+      const callbackUrl =
+        Constants.appOwnership === "expo"
+          ? Linking.createURL("paystack/callback", {
+              queryParams: { order_id: orderId },
+            })
+          : Linking.createURL("paystack/callback", {
+              scheme: "delice",
+              queryParams: { order_id: orderId },
+            });
 
       if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
         Alert.alert("Missing env", "SUPABASE_URL / SUPABASE_ANON_KEY not set");
+        setPaying(false);
         return;
       }
 
@@ -114,6 +129,7 @@ const CheckoutScreen = ({ navigation }: any) => {
           "Payment init failed",
           initJson?.error || initJson?.message || `HTTP ${initRes.status}`,
         );
+        setPaying(false);
         return;
       }
 
@@ -123,23 +139,43 @@ const CheckoutScreen = ({ navigation }: any) => {
       const reference = initJson?.reference as string | undefined;
       if (!authorizationUrl || !reference) {
         Alert.alert("Payment init failed", "Missing authorization URL");
+        setPaying(false);
         return;
       }
 
-      // Open Paystack hosted checkout
-      await WebBrowser.openBrowserAsync(authorizationUrl);
+      // Open Paystack hosted checkout and automatically return to the app via deep link.
+      const result = await WebBrowser.openAuthSessionAsync(
+        authorizationUrl,
+        callbackUrl,
+      );
 
-      let returnedReference = reference;
+      if (result.type !== "success") {
+        Alert.alert(
+          "Payment not completed",
+          "Please complete the payment to place your order.",
+        );
+        setPaying(false);
+        return;
+      }
+
+      const parsed = Linking.parse(result.url);
+      const returnedReference =
+        (parsed.queryParams?.reference as string | undefined) ||
+        (parsed.queryParams?.trxref as string | undefined) ||
+        reference;
 
       navigation.navigate("PaystackCallback", {
         reference: returnedReference,
-        order_id: orderId,
+        order_id:
+          (parsed.queryParams?.order_id as string | undefined) || orderId,
       });
+      setPaying(false);
     } else {
       Alert.alert(
         "Checkout failed",
         (res.payload as string) || "Please try again.",
       );
+      setPaying(false);
     }
   };
 
@@ -153,6 +189,13 @@ const CheckoutScreen = ({ navigation }: any) => {
         keyboardShouldPersistTaps="handled"
       >
         <Text style={styles.title}>Checkout</Text>
+
+        {paying && (
+          <View style={styles.loadingRow}>
+            <ActivityIndicator color={Colors.primary} />
+            <Text style={styles.loadingText}>Processing...</Text>
+          </View>
+        )}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Order Summary</Text>
@@ -175,13 +218,6 @@ const CheckoutScreen = ({ navigation }: any) => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Customer Details</Text>
           <TextInput
-            value={name}
-            onChangeText={setName}
-            placeholder="Full name"
-            placeholderTextColor="#777"
-            style={styles.input}
-          />
-          <TextInput
             value={phone}
             onChangeText={setPhone}
             placeholder="Phone number"
@@ -200,9 +236,9 @@ const CheckoutScreen = ({ navigation }: any) => {
         </View>
 
         <GoldButton
-          title={loading ? "Starting payment..." : "Pay with Card"}
+          title={loading || paying ? "Starting payment..." : "Pay with Card"}
           onPress={onPayWithCard}
-          disabled={!canPlace || loading}
+          disabled={!canPlace || loading || paying}
         />
       </ScrollView>
     </KeyboardAvoidingView>
@@ -228,6 +264,14 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   sectionTitle: { color: Colors.primary, fontWeight: "bold", marginBottom: 10 },
+  loadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    marginBottom: 12,
+  },
+  loadingText: { color: Colors.text, opacity: 0.9 },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
