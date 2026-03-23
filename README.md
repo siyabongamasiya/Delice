@@ -4,7 +4,7 @@ Delice is a React Native (Expo) food ordering app powered by Supabase (Auth + Da
 
 ## App download (for testing on a real Android phone)
 
-- **Android (EAS Build)**: https://expo.dev/accounts/siyabonga_khanyile/projects/delice/builds/656ab319-9cfc-4d19-9dbc-898e39ce1423
+- **Android (EAS Build)**: https://expo.dev/accounts/siyabonga_khanyile/projects/delice/builds/cdb673ac-77b7-46c7-a45c-df9a99aa6655
 
 ### Install on device
 
