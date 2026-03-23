@@ -86,13 +86,6 @@ const HomeScreen = () => {
             Order ahead and pick up at your convenience.
           </Text>
         </View>
-        <View style={styles.card}>
-          <Ionicons name="calendar-outline" size={24} color={Colors.primary} />
-          <Text style={styles.cardTitle}>Reservations</Text>
-          <Text style={styles.cardText}>
-            Secure your table for a seamless evening.
-          </Text>
-        </View>
       </View>
 
       <View style={styles.actionsRow}>

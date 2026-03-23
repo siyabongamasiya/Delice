@@ -149,26 +149,27 @@ const CheckoutScreen = ({ navigation }: any) => {
         callbackUrl,
       );
 
-      if (result.type !== "success") {
-        Alert.alert(
-          "Payment not completed",
-          "Please complete the payment to place your order.",
-        );
-        setPaying(false);
-        return;
+      // Paystack does not always deep-link back after a successful payment.
+      // If the user closes the webview (back/X), still attempt verification using
+      // the reference returned by our init endpoint.
+      if (result.type === "success") {
+        const parsed = Linking.parse(result.url);
+        const returnedReference =
+          (parsed.queryParams?.reference as string | undefined) ||
+          (parsed.queryParams?.trxref as string | undefined) ||
+          reference;
+
+        navigation.navigate("PaystackCallback", {
+          reference: returnedReference,
+          order_id:
+            (parsed.queryParams?.order_id as string | undefined) || orderId,
+        });
+      } else {
+        navigation.navigate("PaystackCallback", {
+          reference,
+          order_id: orderId,
+        });
       }
-
-      const parsed = Linking.parse(result.url);
-      const returnedReference =
-        (parsed.queryParams?.reference as string | undefined) ||
-        (parsed.queryParams?.trxref as string | undefined) ||
-        reference;
-
-      navigation.navigate("PaystackCallback", {
-        reference: returnedReference,
-        order_id:
-          (parsed.queryParams?.order_id as string | undefined) || orderId,
-      });
       setPaying(false);
     } else {
       Alert.alert(

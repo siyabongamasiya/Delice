@@ -22,7 +22,7 @@ module.exports = {
   userInterfaceStyle: "dark",
   icon: "./assets/images/delice-logo.png",
   splash: {
-    image: "./assets/images/splash-icon.png",
+    image: "./assets/images/delice-logo.png",
     resizeMode: "contain",
     backgroundColor: "#000000",
   },
@@ -30,11 +30,11 @@ module.exports = {
     [
       "expo-splash-screen",
       {
-        image: "./assets/images/splash-icon.png",
+        image: "./assets/images/delice-logo.png",
         resizeMode: "contain",
         backgroundColor: "#000000",
-        android: { imageWidth: 220 },
-        ios: { imageWidth: 220 },
+        android: { imageWidth: 180 },
+        ios: { imageWidth: 180 },
       },
     ],
   ],
