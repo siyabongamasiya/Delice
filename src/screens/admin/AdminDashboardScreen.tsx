@@ -51,7 +51,6 @@ const AdminDashboardScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Dashboard</Text>
       {loading && <Spinner />}
       <View style={styles.quickRow}>
         <TouchableOpacity

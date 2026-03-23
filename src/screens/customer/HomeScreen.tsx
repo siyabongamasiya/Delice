@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
-import React, { useCallback, useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import {
   ImageBackground,
   ScrollView,
@@ -159,11 +159,11 @@ const styles = StyleSheet.create({
   ctaOutlineText: { color: Colors.primary, fontWeight: "bold" },
   features: {
     marginTop: 16,
-    flexDirection: "row",
+    flexDirection: "column",
     gap: 12,
   },
   card: {
-    flex: 1,
+    width: "100%",
     backgroundColor: Colors.card,
     borderWidth: 1,
     borderColor: Colors.border,

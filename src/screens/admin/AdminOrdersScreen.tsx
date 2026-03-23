@@ -93,12 +93,21 @@ const AdminOrdersScreen = () => {
         keyExtractor={(o) => o.id}
         renderItem={({ item }) => (
           <View style={styles.row}>
-            <Text style={styles.id}>#{item.id}</Text>
-            {typeof item.total === "number" ? (
-              <Text style={styles.text}>R{item.total.toFixed(2)}</Text>
-            ) : (
-              <Text style={styles.text}>—</Text>
-            )}
+            <View style={styles.left}>
+              <Text style={styles.id} numberOfLines={1}>
+                #{item.id}
+              </Text>
+              {typeof item.total === "number" ? (
+                <Text style={styles.total} numberOfLines={1}>
+                  R{item.total.toFixed(2)}
+                </Text>
+              ) : (
+                <Text style={styles.total} numberOfLines={1}>
+                  —
+                </Text>
+              )}
+            </View>
+
             <TouchableOpacity
               onPress={() => advanceStatus(item.id)}
               style={[
@@ -111,6 +120,7 @@ const AdminOrdersScreen = () => {
                   color: STATUS_COLOR[item.status] || Colors.text,
                   fontWeight: "600",
                 }}
+                numberOfLines={1}
               >
                 {item.status}
               </Text>
@@ -155,14 +165,21 @@ const styles = StyleSheet.create({
     padding: 12,
     marginTop: 8,
   },
+  left: {
+    flex: 1,
+    minWidth: 0,
+    paddingRight: 10,
+  },
   id: { color: Colors.text, fontWeight: "bold" },
-  text: { color: Colors.text },
+  total: { color: Colors.text, marginTop: 4 },
   status: { color: Colors.primary, fontWeight: "600" },
   statusPill: {
     borderWidth: 1,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 16,
+    flexShrink: 0,
+    maxWidth: "45%",
   },
 });
 
