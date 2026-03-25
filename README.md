@@ -28,6 +28,19 @@ Delice is a React Native (Expo) food ordering app powered by Supabase (Auth + Da
 - **Admin**
   - Admin users can manage menu items and orders
 
+## Admin login (testing)
+
+Admin access in the app is currently determined by the signed-in user email:
+
+- A user is treated as **admin** if their email contains `admin` (case-insensitive).
+
+To test admin features:
+
+- **Email**: `admin@gmail.com`
+- **Password**: `123456`
+
+If you already created an admin user in Supabase Auth, use those credentials.
+
 ## Tech stack
 
 - **Mobile**: Expo + React Native
